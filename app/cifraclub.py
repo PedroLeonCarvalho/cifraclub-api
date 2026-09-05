@@ -41,10 +41,15 @@ class CifraClub():
 
     def get_details(self, soup: BeautifulSoup, result: dict):
         """Obtêm os meta dados da música"""
-        t1 = soup.find('h1', class_='t1')
-        t3 = soup.find('h2', class_='t3')
+        t1 = soup.find('h1', class_='t1') or soup.find('h1')
+        t3 = soup.find('h2', class_='t3') or soup.find('h2')
+
         result['name'] = t1.text.strip() if t1 else ""
         result['artist'] = t3.text.strip() if t3 else ""
+
+        cifra_tom = soup.find(id='cifra_tom')
+        if cifra_tom and cifra_tom.find('a'):
+            result['key'] = cifra_tom.find('a').text.strip()
 
         placeholder = soup.find('div', class_='player-placeholder')
         if placeholder and placeholder.find('img'):
