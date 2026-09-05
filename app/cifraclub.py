@@ -39,13 +39,19 @@ class CifraClub():
 
         return result
 
-    def get_details(self, soup: BeautifulSoup, result: dict):
+  def get_details(self, soup: BeautifulSoup, result: dict):
         """Obtêm os meta dados da música"""
         t1 = soup.find('h1', class_='t1') or soup.find('h1')
-        t3 = soup.find('h2', class_='t3') or soup.find('h2')
-
         result['name'] = t1.text.strip() if t1 else ""
-        result['artist'] = t3.text.strip() if t3 else ""
+
+        artist_elem = (
+            soup.find('h2', class_='t3')
+            or soup.find('span', class_='cifra-artist')
+            or soup.select_one('div.cifra header h2 a')
+            or soup.select_one('div.cifra header h2')
+            or soup.select_one('h1.t1 + h2')
+        )
+        result['artist'] = artist_elem.text.strip() if artist_elem else ""
 
         cifra_tom = soup.find(id='cifra_tom')
         if cifra_tom and cifra_tom.find('a'):
