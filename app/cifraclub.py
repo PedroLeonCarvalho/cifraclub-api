@@ -39,24 +39,60 @@ class CifraClub():
 
         return result
 
-    def get_details(self, soup: BeautifulSoup, result: dict):
+    def cifra(self, artist: str, song: str) -> dict:
+        """Lê a página HTML e extrai a cifra e meta dados da música."""
+        result = {}
+        url = f"{CIFRACLUB_URL}{artist}/{song}/"
+        result['cifraclub_url'] = url
+
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=15)
+            if response.status_code != 200:
+                result['error'] = f"Status code: {response.status_code}"
+                return result
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            self.get_details(soup, result, default_artist=artist)
+            self.get_cifra(soup, result)
+        except Exception as err:  # pylint: disable=broad-except
+            result['error'] = str(err)
+
+        return result
+
+    def get_details(self, soup: BeautifulSoup, result: dict, default_artist: str = ""):
         """Obtêm os meta dados da música"""
-        t1 = soup.find('h1', class_='t1') or soup.find('h1')
+        # Título da música
+        t1 = (
+            soup.find('h1', class_='t1')
+            or soup.select_one('div.cifra header h1')
+            or soup.find('h1')
+        )
         result['name'] = t1.text.strip() if t1 else ""
 
+        # Nome do artista
         artist_elem = (
-            soup.find('h2', class_='t3')
-            or soup.find('span', class_='cifra-artist')
-            or soup.select_one('div.cifra header h2 a')
+            soup.find('a', class_='cifra-artist')
+            or soup.select_one('div.cifra header a')
             or soup.select_one('div.cifra header h2')
-            or soup.select_one('h1.t1 + h2')
+            or soup.select_one('h2.t3')
+            or soup.find('meta', property='og:music:musician')
         )
-        result['artist'] = artist_elem.text.strip() if artist_elem else ""
 
+        if artist_elem:
+            if artist_elem.name == 'meta':
+                result['artist'] = artist_elem.get('content', '').strip()
+            else:
+                result['artist'] = artist_elem.text.strip()
+        else:
+            # Fallback limpo a partir do slug (ex: "coldplay" -> "Coldplay")
+            result['artist'] = default_artist.replace('-', ' ').title()
+
+        # Tom original
         cifra_tom = soup.find(id='cifra_tom')
         if cifra_tom and cifra_tom.find('a'):
             result['key'] = cifra_tom.find('a').text.strip()
 
+        # YouTube
         placeholder = soup.find('div', class_='player-placeholder')
         if placeholder and placeholder.find('img'):
             img_youtube = placeholder.img.get('src', '')
