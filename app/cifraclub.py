@@ -39,7 +39,7 @@ class CifraClub():
 
         return result
 
-  def get_details(self, soup: BeautifulSoup, result: dict):
+    def get_details(self, soup: BeautifulSoup, result: dict):
         """Obtêm os meta dados da música"""
         t1 = soup.find('h1', class_='t1') or soup.find('h1')
         result['name'] = t1.text.strip() if t1 else ""
